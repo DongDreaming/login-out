@@ -33,9 +33,9 @@ async function verify(user, token) {
 
 // remove invalid token (log-off)
 async function delToken(user) {
-	await client.connect();
+	// await client.connect();
 	await client.del(user);
-	await client.disconnect();
+	// await client.disconnect();
 }
 
 module.exports = {

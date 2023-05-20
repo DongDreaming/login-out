@@ -80,10 +80,10 @@ router.post("/login", urlencodedParser, (req, res) => {
 })
 
 router.get("/logout", async (req, res) => {
-	await redis.delToken(req.user.username, (err) => {
+	redis.delToken(req.username, (err) => {
 		console.error(err, "Unable to get current username");
 	});
-	res.end(respond.success);
+	res.end(respond.success.toString());
 })
 
 module.exports = router;

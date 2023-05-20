@@ -35,6 +35,7 @@ async function start() {
 					console.log("unable to get username from token")
 					res.end("server crashed");
 				} else if (redis.verify(data.username, token)) {
+					req.username = data.username;
 					next();
 				} else {
 					res.end(respond.WRONG_VERIFY_INFO.toString());
