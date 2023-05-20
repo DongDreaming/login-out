@@ -1,161 +1,164 @@
-// const mysql = require("mysql");
-// const connection = mysql.createConnection({
-// 	host: 'localhost',
-// 	user: 'root',
-// 	password: '123456',
-// 	database: '2cloud'
-// })
+const mysql = require("mysql");
+const pool = mysql.createPool({
+	host: 'localhost',
+	user: 'root',
+	password: '123456',
+	database: '2cloud'
+})
 
-// function add(keys, values) {
-// 	console.log("product table add record to database.");
-// 	return new Promise((resolve, reject) => {
-// 		connection.connect((err) => {
-// 			if (err) {
-// 				console.error('Error connecting: ' + err.stack);
-// 				return;
-// 			}
-// 			console.log('connected as id ' + connection.threadId);
-// 		})
+function add(keys, values) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
 
-// 		var cmd = 'INSERT INTO product ' + keys + ' VALUES ' + values;
+				var cmd = 'INSERT INTO product ' + keys + ' VALUES ' + values;
+				connection.query(cmd, (err, results, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						console.log('Todo Id:' + results.insertId)
+						resolve(results);
+					}
+				});
+				connection.release();
+			}
+		});
+	});
+}
 
-// 		connection.query(cmd, (err, result, fields) => {
-// 			if (err) {
-// 				return console.error(err.message);
-// 			}
-// 			console.log('Todo Id:' + results.insertId)
-// 			resolve(null);
-// 		})
+function alt(statement) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
 
-// 		connection.end();
-// 	})
-// }
+				const prefix = "UPDATE product SET ";
+				var cmd = prefix + statement;
+				console.log(cmd);
 
-// function alt(id, statement) {
-// 	connection.connect((err) => {
-// 		if (err) {
-// 			console.error('Error connecting: ' + err.stack);
-// 			return;
-// 		}
-// 		console.log('connected as id ' + connection.threadId);
-// 	})
+				connection.query(cmd, (err, results, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						console.log('Todo Id:' + results.insertId);
+						resolve(results);
+					}
+				});
+				connection.release();
+			}
+		});
+	});
+}
 
-// 	const prefix = "UPDATE product SET ";
-// 	var cmd = prefix + statement;
+function del(id) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
 
-// 	connection.query(cmd, (err, result, fields) => {
-// 		if (err) {
-// 			return console.error(err.message);
-// 		}
-// 		console.log('Todo Id:' + results.insertId)
-// 	})
+				var cmd = 'DELETE FROM product WHERE id=' + id;
 
-// 	connection.end();
-// }
+				connection.query(cmd, (err, results, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						console.log('Todo Id:' + results.insertId)
+					}
 
-// function del(id) {
-// 	connection.connect((err) => {
-// 		if (err) {
-// 			console.error('Error connecting: ' + err.stack);
-// 			return;
-// 		}
-// 		console.log('connected as id ' + connection.threadId);
-// 	})
+				});
+				connection.release();
+			}
+		});
+	});
+}
 
-// 	var cmd = 'DELETE FROM product WHERE id=' + id;
+function findByName(name) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
+				var statement = "SELECT * FROM product WHERE name=" + "\"" + name + "\"" + " LIMIT 1";
 
-// 	connection.query(cmd, (err, result, fields) => {
-// 		if (err) {
-// 			return console.error(err.message);
-// 		}
-// 		console.log('Todo Id:' + results.insertId)
-// 	})
+				connection.query(statement, (err, results, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						if (results.length === 0) {
+							resolve(null);
+						} else {
+							resolve(results);
+						}
+					}
+				});
+				connection.release();
+			}
+		});
+	});
+}
 
-// 	connection.end();
-// }
+function findById(id) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
+				var statement = 'SELECT * FROM product WHERE id=' + id + " LIMIT 1";
 
-// function findByName(name) {
-// 	console.log("product table activated");
-// 	connection.connect((err) => {
-// 		if (err) {
-// 			console.error('Error connecting: ' + err.stack);
-// 			return;
-// 		} else {
-// 			console.log('connected as id ' + connection.threadId);
-// 		}
-// 	});
-// 	console.log("connection established");
+				connection.query(statement, (err, results, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						if (results.length === 0) {
+							resolve(null);
+						} else {
+							resolve(results);
+						}
+					}
+				});
+				connection.release();
+			}
+		});
+	});
+}
 
-// 	var statement = "SELECT * FROM product WHERE name=" + "\"" + name + "\"" + " LIMIT 1";
+function search(statement) {
+	return new Promise((resolve, reject) => {
+		pool.getConnection((err, connection) => {
+			if (err) {
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
+				const prefix = 'SELECT * FROM product WHERE ';
+				var cmd = prefix + statement;
 
-// 	connection.query(statement, (err, result, fields) => {
-// 		if (err) {
-// 			console.log(err);
-// 			return console.error(err.message);
-// 		} else {
-// 			console.log(result);
-// 			return result;
-// 		}
-// 	})
+				connection.query(cmd, (err, results, fields) => {
+					if (err) {
+						reject(err.message);
+					} else {
+						resolve(results);
+					}
+				})
+				connection.release();
+			}
+		});
+	});
+}
 
-// 	connection.end();
-
-// }
-
-// function findById(id) {
-// 	return new Promise((resolve, reject) => {
-// 		connection.connect((err) => {
-// 			if (err) {
-// 				console.error('Error connecting: ' + err.stack);
-// 				return;
-// 			}
-// 			console.log('connected as id ' + connection.threadId);
-// 		});
-
-// 		var statement = 'SELECT * FROM product WHERE id=' + id + " LIMIT 1";
-
-// 		connection.query(statement, (err, result, fields) => {
-// 			if (err) {
-// 				return reject(err.message);
-// 			} else {
-// 				return resolve(result);
-// 			}
-// 		})
-
-// 		connection.end();
-// 	})
-// }
-
-// function search(statement) {
-// 	return new Promise((resolve, reject) => {
-// 		connection.connect((err) => {
-// 			if (err) {
-// 				console.error('Error connecting: ' + err.stack);
-// 				return;
-// 			}
-// 			console.log('connected as id ' + connection.threadId);
-// 		});
-
-// 		const prefix = 'SELECT * FROM product WHERE ';
-// 		var cmd = prefix + statement;
-
-// 		connection.query(cmd, (err, result, fields) => {
-// 			if (err) {
-// 				return reject(err.message);
-// 			} else {
-// 				return resolve(result);
-// 			}
-// 		})
-
-// 		connection.end();
-// 	})
-// }
-
-// module.exports = {
-// 	add: add,
-// 	alt: alt,
-// 	del: del,
-// 	findById: findById,
-// 	findByName: findByName,
-// 	search: search
-// }
+module.exports = {
+	add: add,
+	alt: alt,
+	del: del,
+	findById: findById,
+	findByName: findByName,
+	search: search
+}

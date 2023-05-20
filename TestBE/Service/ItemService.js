@@ -1,137 +1,189 @@
-const productTable = require("../DAO/Tables");
+const productTable = require("../DAO/ProductTable");
 
-async function add(product) {
-	console.log("/item service add product");
-	console.log(product.name);
-	// if exist
-	var temp = await findByName(product.name, (err) => {
-		console.log(err);
-	})
-	console.log(temp);
-	// if (!(temp === null)) {
-	// 	return null;
-	// }
+function add(product) {
+	return new Promise(async (resolve, reject) => {
+		// if exist
+		await findByName(product.name).then(async (temp) => {
+			if (temp !== null) {
+				resolve(null);
+			} else {
+				// generate sql sentence
+				var keys = "( ";
+				var values = "( ";
 
-	// // generate sql sentence
-	// var keys = "( ";
-	// var values = "( ";
+				for (var key in product) {
+					if (key != Object.keys(product).pop()) {
+						keys = keys + key + ", ";
+						values = values + "\'" + product[key] + "\'" + ", ";
+					} else {
+						keys = keys + key + " )";
+						values = values + "\'" + product[key] + "\'" + " )";
+					}
+				}
 
-	// for (var key in product) {
-	// 	if (key != Object.keys(product).pop()) {
-	// 		keys = keys + key + ", ";
-	// 		values = values + "\'" + user[key] + "\'" + ", ";
-	// 	} else {
-	// 		keys = keys + key + " )";
-	// 		values = values + "\'" + user[key] + "\'" + " )";
-	// 	}
-	// }
-
-	// // add product to DB
-	// productTable.add(keys, values);
-
-	// var solution = findByName(product.name)
-	// if (solution === null) {
-	// 	return -1;
-	// } else {
-	// 	return solution;
-	// }
-
-}
-
-async function alt(product) {
-	// if exist
-	var temp = await findById(product.id);
-	if (temp === null) {
-		return null;
-	}
-
-	// Generate sql command
-	var statement = '';
-	for (var key in product) {
-		if (key === 'id') {
-
-		} else if (key != Object.keys(product).pop()) {
-			statement = key + "=" + product[key] + ", ";
-		} else {
-			statement = key + "=" + product[key] + "WHERE id = " + product.id;
-		}
-	}
-
-	// add product to DB
-	await productTable.altProduct(product.id, statement);
-
-	var solution = await findById(product.id)
-	if (solution === null) {
-		return -1;
-	} else {
-		return solution;
-	}
-}
-
-async function del(id) {
-	// if exist
-	var temp = findById(product.id);
-	if (temp === null) {
-		return null;
-	}
-
-	await productTable.delProduct(id);
-	return true;
-}
-
-async function search(limitation) {
-	var statement = '';
-	for (var key in limitation) {
-		switch (key) {
-			case 'msg':
-				statement = statement + "name LINK \'%" + limitation.msg + "%\' AND";
-				break;
-			case 'item_code':
-				statement = statement + "item_code LIKE \'%" + limitation.item_code + "%\' AND";
-				break;
-			case 'l_price':
-				statement = statement + "price>" + limitation.l_price + " AND";
-				break;
-			case 'm_price':
-				statement = statement + "price<" + limitation.m_price + " AND";
-				break;
-			case 's_size':
-				statement = statement + "size>" + limitation.s_size + " AND";
-				break;
-			case 'b_size':
-				statement = statement + "size<" + limitation.b_size + " AND";
-				break;
-			case 'color':
-				statement = statement + "color LINK \'%" + limitation.msg + "%\'";
-				break;
-		}
-	}
-
-	var list = await productTable.psearch(statement);
-	if (list === null) {
-		return null;
-	} else {
-		return list[0];
-	}
-}
-
-async function findByName(name) {
-	console.log("find by name activated");
-	await productTable.pfindByName(name).then((temp) => {
-		console.log(temp);
-		console.log("find by name returning");
-		if (temp === null) {
-			return null;
-		} else {
-			return temp;
-		}
+				// add product to DB
+				await productTable.add(keys, values);
+				await findByName(product.name).then((result) => {
+					if (result === null) {
+						resolve(-1);
+					} else {
+						resolve(result);
+					}
+				});
+			};
+		}).catch(e => {
+			reject(e);
+		});
 	});
-
-
 }
 
-async function findById(id) {
-	return await productTable.pfindById(id);
+function alt(product) {
+	return new Promise(async (resolve, reject) => {
+		// if exist
+		await findById(product.id).then(async (temp) => {
+			if (temp === null) {
+				resolve(null);
+			} else {
+				// Generate sql command
+				var statement = '';
+				for (var key in product) {
+					if (key === 'id') {
+
+					} else if (key != Object.keys(product).pop()) {
+						statement = statement + key + "=" + "\"" + product[key] + "\"" + ", ";
+					} else {
+						statement = statement + key + "=" + "\"" + product[key] + "\"" + "WHERE id = " + product.id;
+					}
+				}
+
+				// add product to DB
+				await productTable.alt(statement);
+
+				await findById(product.id).then((result) => {
+					if (result === null) {
+						resolve(-1);
+					} else {
+						resolve(result);
+					}
+				})
+			};
+		}).catch(e => {
+			reject(e);
+		})
+	});
+}
+
+function del(id) {
+	return new Promise(async (resolve, reject) => {
+		// if exist
+		await findById(product.id).then(async (temp) => {
+			if (temp === null) {
+				resolve(null);
+			} else {
+				await productTable.del(id);
+				resolve(true);
+			}
+		}).catch(e => {
+			reject(e);
+		});
+	});
+}
+
+function search(limitation) {
+	return new Promise(async (resolve, reject) => {
+		var statement = '';
+		for (var key in limitation) {
+			switch (key) {
+				case 'msg':
+					if (limitation.msg === "") {
+						break;
+					} else {
+						statement = statement + "name LIKE \'%" + limitation.msg + "%\' AND ";
+						break;
+					}
+				case 'item_code':
+					if (limitation.item_code === "") {
+						break;
+					} else {
+						statement = statement + "item_code LIKE \'%" + limitation.item_code + "%\' AND ";
+						break;
+					}
+				case 'l_price':
+					if (limitation.l_price === "") {
+						break;
+					} else {
+						statement = statement + "price>" + limitation.l_price + " AND ";
+						break;
+					}
+				case 'm_price':
+					if (limitation.m_price === "") {
+						break;
+					} else {
+						statement = statement + "price<" + limitation.m_price + " AND ";
+						break;
+					}
+				case 's_size':
+					if (limitation.s_size === "") {
+						break;
+					} else {
+						statement = statement + "size>" + limitation.s_size + " AND ";
+						break;
+					}
+				case 'b_size':
+					if (limitation.b_size === "") {
+						break;
+					} else {
+						statement = statement + "size<" + limitation.b_size + " AND ";
+						break;
+					}
+				case 'color':
+					if (limitation.msg === "") {
+						break;
+					} else {
+						statement = statement + "color LINK \'%" + limitation.msg + "%\' AND ";
+						break;
+					}
+			}
+		}
+		statement = statement.slice(0, -5);
+		await productTable.search(statement).then((list) => {
+			if (list === null) {
+				resolve(null);
+			} else {
+				resolve(list[0]);
+			}
+		}).catch(e => {
+			reject(e);
+		});
+	});
+}
+
+function findByName(name) {
+	return new Promise(async (resolve, reject) => {
+		await productTable.findByName(name).then((temp) => {
+			if (temp === null) {
+				resolve(null);
+			} else {
+				resolve(temp[0]);
+			}
+		});
+	}).catch(e => {
+		reject(e);
+	});
+}
+
+function findById(id) {
+	return new Promise(async (resolve, reject) => {
+		await productTable.findById(id).then((temp) => {
+			if (temp === null) {
+				resolve(null);
+			} else {
+				resolve(temp[0]);
+			}
+		});
+	}).catch(e => {
+		reject(e);
+	});
 }
 
 module.exports = {

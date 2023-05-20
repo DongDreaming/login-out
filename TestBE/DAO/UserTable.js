@@ -1,5 +1,5 @@
 const mysql = require("mysql");
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
 	host: 'localhost',
 	user: 'root',
 	password: '123456',
@@ -7,7 +7,7 @@ const connection = mysql.createConnection({
 })
 
 function connectionTest() {
-	connection.connect((err) => {
+	pool.getConnection((err) => {
 		if (err) {
 			console.error('Error connecting: ' + err.stack);
 			return;
@@ -15,57 +15,63 @@ function connectionTest() {
 		console.log('connected as id ' + connection.threadId);
 	});
 
-	connection.end();
+	connection.release();
 }
 
-function addUser(keys, values) {
+function add(keys, values) {
 	return new Promise((resolve, reject) => {
-		connection.connect((err) => {
+		pool.getConnection(function (err, connection) {
 			if (err) {
-				console.error('Error connecting: ' + err.stack);
-				return;
+				reject(err);
+			} else {
+				console.log('connected as id ' + connection.threadId);
+				var msg = 'INSERT INTO user ' + keys + 'VALUES' + values;
+
+				connection.query(msg, (err, results, fields) => {
+					if (err) {
+						reject(console.error(err.message));
+					} else {
+						// get inserted id
+						console.log('Todo Id:' + results.insertId);
+						resolve(results);
+					}
+
+					connection.release();
+				});
 			}
-			console.log('connected as id ' + connection.threadId);
 		});
-
-		var msg = 'INSERT INTO user ' + keys + 'VALUES' + values;
-
-		connection.query(msg, (err, results, fields) => {
-			if (err) {
-				reject(console.error(err.message));
-			}
-			// get inserted id
-			console.log('Todo Id:' + results.insertId);
-			resolve(results);
-		});
-
-		connection.end();
 	})
 }
 
 function findByName(username) {
-	connection.connect((err) => {
-		if (err) {
-			console.error('Error connecting: ' + err.stack);
-			return;
-		}
-		console.log('connected as id ' + connection.threadId);
-	});
+	return new Promise((resolve, reject) => {
+		pool.getConnection(function (err, connection) {
+			if (err) {
+				reject(err.message);
+			} else {
+				console.log('connected as id ' + connection.threadId);
+				var statement = 'SELECT * FROM user WHERE username=' + "\"" + username + "\"" + " LIMIT 1";
 
-	var statement = 'SELECT * FROM user WHERE username=' + "\"" + username + "\"" + " LIMIT 1";
+				connection.query(statement, (err, result, fields) => {
+					if (err) {
+						reject(err.message);
+					} else {
+						if (result.length === 0) {
+							reject(null);
+						} else {
+							resolve(result[0]);
+						}
+					}
+					connection.release();
+				})
 
-	connection.query(statement, (err, result, fields) => {
-		if (err) {
-			console.log(err.message);
-		} else {
-			return result;
-		}
+			}
+		});
 	})
-	connection.end();
 }
 
 
 module.exports = {
-	addUser: addUser,
+	add: add,
 	findByName: findByName,
 }
