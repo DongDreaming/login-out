@@ -1,41 +1,62 @@
 const redis = require('redis');
-const client = redis.createClient({
-	socket: {
-		host: '127.0.0.1',
-		port: '6379'
-	}
-})
+const client = redis.createClient('6379', '127.0.0.1');
 
 client.on('error', (err) => {
 	console.log('Redis Client Error', err);
 })
 
 // store token to redis
-async function storeToken(user, token, expire) {
-	await client.connect();
-	await client.set(user, token);
-	await client.expire(user, expire);
-	await client.disconnect();
+function storeToken(user, token, expire) {
+	client.connect('6379', '127.0.0.1').then(() => {
+		client.set(user, token).then((val) => {
+			client.expire(user, expire).then((temp) => {
+				client.quit();
+			});
+		});
+	}).catch(e => {
+		console.error(e);
+	});
 }
 
 // verify toke from session with redis record
-async function verify(user, token) {
-	await client.connect();
-	if (await client.exists(user)) {
-		if (await client.get(user) === token) {
-			return true;
-		}
-	} else {
-		return false;
-	}
-	await client.disconnect();
+function verify(user, token) {
+	return new Promise((resolve, reject) => {
+		client.connect('6379', '127.0.0.1').then(() => {
+			client.exists(user).then((boo) => {
+				if (boo == true) {
+					client.get(user).then((temp) => {
+						if (temp === token) {
+							resolve(true)
+						}
+						client.quit();
+					}).catch(e => {
+						reject(e);
+					});
+				} else {
+					resolve(false);
+				}
+			}).catch(e => {
+				reject(e);
+			});
+		}).catch(e => {
+			reject(e);
+		});
+	});
 }
 
 // remove invalid token (log-off)
-async function delToken(user) {
-	// await client.connect();
-	await client.del(user);
-	// await client.disconnect();
+function delToken(user) {
+	client.connect('6379', '127.0.0.1').then(() => {
+		client.del(user, (err, val) => {
+			if (err) {
+				console.error(err);
+				return;
+			} else {
+				console.log(val);
+			}
+			client.quit();
+		})
+	})
 }
 
 module.exports = {

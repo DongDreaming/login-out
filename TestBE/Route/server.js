@@ -34,14 +34,20 @@ async function start() {
 				if (data.username === null) {
 					console.log("unable to get username from token")
 					res.end("server crashed");
-				} else if (redis.verify(data.username, token)) {
-					req.username = data.username;
-					next();
-				} else {
-					res.end(respond.WRONG_VERIFY_INFO.toString());
 				}
+
+				redis.verify(data.username, token).then((boo) => {
+					if (boo == true) {
+						req.username = data.username;
+						next();
+					} else {
+						res.end(respond.WRONG_VERIFY_INFO.toString());
+					}
+				}).catch(e => {
+					console.error(e);
+				})
 			}).catch(e => {
-				res.end(respond.WRONG_VERIFY_INFO.toString());
+				console.error(e);
 			})
 		} else {
 			next();

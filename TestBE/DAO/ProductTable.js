@@ -70,6 +70,7 @@ function del(id) {
 						reject(err);
 					} else {
 						console.log('Todo Id:' + results.insertId)
+						resolve(results);
 					}
 
 				});

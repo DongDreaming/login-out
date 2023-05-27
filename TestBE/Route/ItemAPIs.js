@@ -66,6 +66,7 @@ router.post("/updateItem", (req, res) => {
 router.get("/delItem", (req, res) => {
 	// Get product ID
 	var id = req.query.id;
+	console.log(id);
 
 	// call itemservice to delete target product from system record
 	itemService.del(id).then((solution) => {

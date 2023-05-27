@@ -76,12 +76,12 @@ function alt(product) {
 function del(id) {
 	return new Promise(async (resolve, reject) => {
 		// if exist
-		await findById(product.id).then(async (temp) => {
+		await findById(id).then(async (temp) => {
 			if (temp === null) {
 				resolve(null);
 			} else {
 				await productTable.del(id);
-				resolve(true);
+				resolve(temp);
 			}
 		}).catch(e => {
 			reject(e);
@@ -150,7 +150,7 @@ function search(limitation) {
 			if (list === null) {
 				resolve(null);
 			} else {
-				resolve(list[0]);
+				resolve(list);
 			}
 		}).catch(e => {
 			reject(e);
